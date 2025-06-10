@@ -18,7 +18,7 @@ RECIPIENT_EMAILS = [
 ]
 
 # ✅ API endpoint
-API_URL = "https://sepsis-prediction-app-3pv2.onrender.com/test/v1.0/prediction/"
+API_URL = "https://sepsis-model-api.onrender.com/test/v1.0/prediction/"
 
 # 🕒 Get current EST timestamp
 eastern = pytz.timezone("US/Eastern")
