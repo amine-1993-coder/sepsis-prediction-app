@@ -14,12 +14,11 @@ import io
 SENDER_EMAIL = "amine2671993@gmail.com"
 RECIPIENT_EMAILS = [
     "amine2671993@gmail.com",
-    #"example1@hospital.org",
     "khelifi@rowan.edu"
 ]
 
-# ✅ API endpoint inside Docker network
-API_URL = "https://sepsis-prediction-app-3pv2.onrender.com/test/v1.0/prediction/"
+# ✅ API endpoint
+MODEL_API_URL = "https://sepsis-prediction-app-3pv2.onrender.com/test/v1.0/prediction/"
 
 # 🕒 Get current EST timestamp
 eastern = pytz.timezone("US/Eastern")
@@ -29,15 +28,13 @@ timestamp_str = now_est.strftime("Prediction Results of %m-%d-%Y - %I-%M %p EST"
 # 📤 Email sending function using yagmail
 def send_email_with_csv(csv_content, subject, filename, recipient_emails):
     try:
-        yag = yagmail.SMTP("amine2671993@gmail.com", "pgvj kyrn ragl zqjj")
+        yag = yagmail.SMTP("amine2671993@gmail.com", "pgvj kyrn ragl zqjj")  # 🔐 Replace with your App Password
         attachment = io.StringIO(csv_content)
         attachment.name = filename
         yag.send(
             to=recipient_emails,
             subject=subject,
-            contents="Hello Doctor, "
-                     "I hope this email finds you well, "
-                     "Please find the attached sepsis prediction report.",
+            contents="Hello Doctor, I hope this email finds you well. Please find the attached sepsis prediction report.",
             attachments=attachment
         )
         st.success(f"📧 Report emailed to: {', '.join(recipient_emails)}")
@@ -55,7 +52,6 @@ def call_docker_model(payload: dict):
         }
         headers = {"Content-Type": "application/json"}
         response = requests.post(MODEL_API_URL, json=cleaned_payload, headers=headers)
-        #response = requests.post(API_URL, json=payload)
         response.raise_for_status()
 
         result = response.json()
