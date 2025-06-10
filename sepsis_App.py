@@ -18,7 +18,7 @@ RECIPIENT_EMAILS = [
 ]
 
 # ✅ API endpoint
-MODEL_API_URL = "https://sepsis-prediction-app-3pv2.onrender.com/test/v1.0/prediction/"
+API_URL = "https://sepsis-prediction-app-3pv2.onrender.com/test/v1.0/prediction/"
 
 # 🕒 Get current EST timestamp
 eastern = pytz.timezone("US/Eastern")
@@ -51,7 +51,7 @@ def call_docker_model(payload: dict):
             ]
         }
         headers = {"Content-Type": "application/json"}
-        response = requests.post(MODEL_API_URL, json=cleaned_payload, headers=headers)
+        response = requests.post(API_URL, json=cleaned_payload, headers=headers)
         response.raise_for_status()
 
         result = response.json()
