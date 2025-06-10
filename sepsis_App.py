@@ -55,6 +55,7 @@ def call_docker_model(payload: dict):
         }
         headers = {"Content-Type": "application/json"}
         response = requests.post(MODEL_API_URL, json=cleaned_payload, headers=headers)
+        #response = requests.post(API_URL, json=payload)
         response.raise_for_status()
 
         result = response.json()
