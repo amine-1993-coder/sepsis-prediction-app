@@ -19,7 +19,7 @@ RECIPIENT_EMAILS = [
 ]
 
 # ✅ API endpoint inside Docker network
-MODEL_API_URL = "http://dx_model_server_v2:9090/test/v1.0/prediction/"
+API_URL = "https://sepsis-prediction-app-3pv2.onrender.com/test/v1.0/prediction/"
 
 # 🕒 Get current EST timestamp
 eastern = pytz.timezone("US/Eastern")
