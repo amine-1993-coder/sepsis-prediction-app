@@ -18,7 +18,7 @@ RECIPIENT_EMAILS = [
     "khelifi@rowan.edu"
 ]
 
-# ✅ API endpoint inside Docker network
+# ✅ API endpoint deployed on Render
 MODEL_API_URL = "https://sepsis-model-api.onrender.com/test/v1.0/prediction/"
 
 # 🕒 Get current EST timestamp
@@ -26,33 +26,44 @@ eastern = pytz.timezone("US/Eastern")
 now_est = datetime.now(eastern)
 timestamp_str = now_est.strftime("Prediction Results of %m-%d-%Y - %I-%M %p EST")
 
+# ✅ Only include features your model was trained on
+VALID_FEATURES = {
+    'Age', 'Gender', 'HeartRate', 'Temp', 'SystolicBP', 'MeanBP', 'DiastolicBP',
+    'RespRate', 'OximetrySat', 'Potassium', 'Chloride', 'Calcium', 'Hemoglobin',
+    'pH', 'BaseExcess', 'Bicarbonate', 'FiO2', 'Glucose', 'BUN', 'Creatinine',
+    'Magnesium', 'SGOT', 'SGPT', 'TotalBili', 'WBC', 'Platelets', 'PaCO2', 'Lactate'
+}
+
 # 📤 Email sending function using yagmail
 def send_email_with_csv(csv_content, subject, filename, recipient_emails):
     try:
-        yag = yagmail.SMTP("amine2671993@gmail.com", "pgvj kyrn ragl zqjj")
+        yag = yagmail.SMTP(SENDER_EMAIL, "pgvj kyrn ragl zqjj")
         attachment = io.StringIO(csv_content)
         attachment.name = filename
         yag.send(
             to=recipient_emails,
             subject=subject,
-            contents="Hello Doctor, "
-                     "I hope this email finds you well, "
-                     "Please find the attached sepsis prediction report.",
+            contents="Hello Doctor,\n\nPlease find the attached sepsis prediction report.",
             attachments=attachment
         )
         st.success(f"📧 Report emailed to: {', '.join(recipient_emails)}")
     except Exception as e:
         st.error(f"❌ Failed to send email: {e}")
 
-# 🔁 Call the Dockerized ML model
+# 🔁 Call the Render-deployed ML model
 def call_docker_model(payload: dict):
     try:
+        # ✅ Clean and filter input to match model expectations
         cleaned_payload = {
             "sepsis_fv": [
-                {k: (None if pd.isna(v) or v in [np.inf, -np.inf] else v) for k, v in row.items()}
+                {
+                    k: (None if pd.isna(v) or v in [np.inf, -np.inf] else v)
+                    for k, v in row.items() if k in VALID_FEATURES
+                }
                 for row in payload["sepsis_fv"]
             ]
         }
+
         headers = {"Content-Type": "application/json"}
         response = requests.post(MODEL_API_URL, json=cleaned_payload, headers=headers)
         response.raise_for_status()
@@ -69,6 +80,7 @@ def call_docker_model(payload: dict):
         df['SepsisPrediction'] = ["Positive" if p == 1 else "Negative" for p in raw_preds]
         df['Warning'] = df['Temp'].apply(lambda t: "Temperature is low" if t is not None and t < 35 else "")
         return df
+
     except Exception as e:
         st.error(f"❌ Error communicating with model API: {e}")
         return pd.DataFrame()
@@ -83,7 +95,7 @@ def style_predictions(df):
 # 🧬 Streamlit UI
 st.set_page_config(page_title="Sepsis Prediction ML Tool", layout="centered")
 
-# 🖼️ Delphine Image
+# 🖼️ Image logo
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     st.image("images.png", width=100, use_container_width=False)
