@@ -169,7 +169,7 @@ if 'result_df' in st.session_state and not st.session_state['result_df'].empty:
 st.markdown("<br>", unsafe_allow_html=True)
 col_report = st.columns(3)
 with col_report[1]:
-    if st.button("📄 Generate Report and Email to the Doctor", use_container_width=True, key="generate_button", help="Download CSV report", type="primary"):
+    if st.button("📄 Generate Report and 📧 Email to the Doctor", use_container_width=True, key="generate_button", help="Download CSV report", type="primary"):
         if 'result_df' in st.session_state:
             csv_data = st.session_state['result_df'].to_csv(index=False)
             st.session_state['csv_ready'] = True
