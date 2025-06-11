@@ -65,7 +65,7 @@ def call_docker_model(payload: dict):
         }
 
         # 🧪 DEBUG (optional)
-        st.write("📤 Cleaned payload:", json.dumps(cleaned_payload, indent=2))
+        #st.write("📤 Cleaned payload:", json.dumps(cleaned_payload, indent=2))
 
         headers = {"Content-Type": "application/json"}
         response = requests.post(MODEL_API_URL, json=cleaned_payload, headers=headers)
