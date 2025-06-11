@@ -26,14 +26,6 @@ eastern = pytz.timezone("US/Eastern")
 now_est = datetime.now(eastern)
 timestamp_str = now_est.strftime("Prediction Results of %m-%d-%Y - %I-%M %p EST")
 
-# ✅ Only include features your model was trained on
-VALID_FEATURES = {
-    'Age', 'Gender', 'HeartRate', 'Temp', 'SystolicBP', 'MeanBP', 'DiastolicBP',
-    'RespRate', 'OximetrySat', 'Potassium', 'Chloride', 'Calcium', 'Hemoglobin',
-    'pH', 'BaseExcess', 'Bicarbonate', 'FiO2', 'Glucose', 'BUN', 'Creatinine',
-    'Magnesium', 'SGOT', 'SGPT', 'TotalBili', 'WBC', 'Platelets', 'PaCO2', 'Lactate'
-}
-
 # 📤 Email sending function using yagmail
 def send_email_with_csv(csv_content, subject, filename, recipient_emails):
     try:
@@ -50,28 +42,55 @@ def send_email_with_csv(csv_content, subject, filename, recipient_emails):
     except Exception as e:
         st.error(f"❌ Failed to send email: {e}")
 
+# ✅ Only include features your model was trained on
+VALID_FEATURES = [
+    'Age', 'Gender', 'HeartRate', 'Temp', 'SystolicBP', 'MeanBP', 'DiastolicBP',
+    'RespRate', 'OximetrySat', 'Potassium', 'Chloride', 'Calcium', 'Hemoglobin', 'pH',
+    'BaseExcess', 'Bicarbonate', 'FiO2', 'Glucose', 'BUN', 'Creatinine', 'Magnesium',
+    'SGOT', 'SGPT', 'TotalBili', 'WBC', 'Platelets', 'PaCO2', 'Lactate'
+]
+
 def call_docker_model(payload: dict):
     try:
+        # 🧼 Remove invalid or null features for each row
         cleaned_payload = {
             "sepsis_fv": [
-                {k: (None if pd.isna(v) or v in [np.inf, -np.inf] else v)
-                 for k, v in row.items() if k in VALID_FEATURES}
+                {
+                    k: float(v)
+                    for k, v in row.items()
+                    if k in VALID_FEATURES and v is not None and not pd.isna(v)
+                }
                 for row in payload["sepsis_fv"]
             ]
         }
-        st.write("📤 Cleaned payload:", cleaned_payload)  # ◀ DEBUG
 
-        response = requests.post(MODEL_API_URL, json=cleaned_payload)
+        # 🧪 DEBUG (optional)
+        st.write("📤 Cleaned payload:", json.dumps(cleaned_payload, indent=2))
+
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(MODEL_API_URL, json=cleaned_payload, headers=headers)
         response.raise_for_status()
 
         result = response.json()
-        ...
+        raw_preds = result.get("sepsis_risk", [])
+
+        if len(raw_preds) != len(cleaned_payload["sepsis_fv"]):
+            st.error("🚨 Mismatch: Model returned fewer predictions than inputs.")
+            return pd.DataFrame()
+
+        df = pd.DataFrame(cleaned_payload["sepsis_fv"])
+        df.insert(0, "PatientID", [f"Patient_{i+1}" for i in range(len(df))])
+        df['SepsisPrediction'] = ["Positive" if p == 1 else "Negative" for p in raw_preds]
+        df['Warning'] = df['Temp'].apply(lambda t: "Temperature is low" if t is not None and t < 35 else "")
+        return df
+
     except requests.exceptions.HTTPError as http_err:
         st.error(f"❌ API error {http_err.response.status_code}: {http_err.response.text}")
         return pd.DataFrame()
     except Exception as e:
         st.error(f"❌ Unexpected error: {e}")
         return pd.DataFrame()
+
 
 
 # 🎨 Row coloring
